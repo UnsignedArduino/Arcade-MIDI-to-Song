@@ -17,4 +17,11 @@ parser.add_argument("--output", "-o", type=Optional[Path],
 args = parser.parse_args()
 logger.debug(f"Received arguments: {args}")
 
+input_path = Path(args.input)
+logger.debug(f"Input path is {input_path}")
 
+if not input_path.exists():
+    logger.error(f"Input file does not exist!")
+    exit(1)
+else:
+    logger.debug("File exists!")
