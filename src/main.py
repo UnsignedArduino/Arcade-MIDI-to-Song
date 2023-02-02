@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser
+from mido import MidiFile
+from arcade_music import encodeSong, getEmptySong
 from utils.logger import create_logger
 import logging
 
@@ -20,8 +22,26 @@ logger.debug(f"Received arguments: {args}")
 input_path = Path(args.input)
 logger.debug(f"Input path is {input_path}")
 
-if not input_path.exists():
-    logger.error(f"Input file does not exist!")
-    exit(1)
+# midi = MidiFile(input_path)
+
+song = getEmptySong(2)
+bin_result = encodeSong(song)
+
+logger.debug(f"Generated {len(bin_result)} bytes, converting to text")
+
+hex_result = map(lambda v: format(v, "02X"), bin_result)
+result = "hex`"
+for hex_num in hex_result:
+    result += hex_num
+result += "`"
+
+logger.debug(f"Hex string result is {len(result)} characters long")
+
+output_path = args.output
+if output_path is None:
+    logger.debug("No output path provided, printing to standard output")
+    print(result)
 else:
-    logger.debug("File exists!")
+    logger.debug(f"Writing to {output_path}")
+    Path(output_path).write_text(result)
+
