@@ -1,7 +1,6 @@
 # https://github.com/microsoft/pxt/blob/master/pxtlib/music.ts
 
 from typing import Optional, List
-from functools import reduce
 from struct import pack
 from dataclasses import dataclass
 from enum import Enum
@@ -89,9 +88,17 @@ class Song(SongInfo):
     tracks: List[Track]
 
 
+def get8BitNumber(num: Optional[int]) -> bytes:
+    return bytes([0 if num is None else num])
+
+
+def get16BitNumber(num: Optional[int]) -> bytes:
+    return pack("<h", 0 if num is None else num)
+
+
 def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
     if isDrumTrack:
-        return bytearray([note.note])
+        return bytes([note.note])
 
     flags = 0
     if note.enharmonicSpelling == EnharmonicSpelling.FLAT:
@@ -99,12 +106,8 @@ def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
     elif note.enharmonicSpelling == EnharmonicSpelling.SHARP:
         flags = 2
 
-    return bytearray(
+    return bytes(
         [(note.note - (instrumentOctave - 2) * 12) | (flags << 6)])
-
-
-def get16BitNumber(num: int) -> bytes:
-    return pack("<h", num)
 
 
 def encodeNoteEvent(event: NoteEvent, instrumentOctave: int,
@@ -136,20 +139,19 @@ def encodeInstrument(instrument: Instrument) -> bytes:
         out += get16BitNumber(instrument.pitchEnvelope.release)
         out += get16BitNumber(instrument.pitchEnvelope.amplitude)
     out.append(0 if instrument.ampLFO is None else instrument.ampLFO.frequency)
-    out += 0 if instrument.ampLFO is None else instrument.ampLFO.amplitude
-    out += 0 if instrument.pitchLFO is None else instrument.pitchLFO.frequency
-    out += 0 if instrument.pitchLFO is None else instrument.pitchLFO.amplitude
+    out += get16BitNumber(0 if instrument.ampLFO is None else instrument.ampLFO.amplitude)
+    out.append(0 if instrument.pitchLFO is None else instrument.pitchLFO.frequency)
+    out += get16BitNumber(0 if instrument.pitchLFO is None else instrument.pitchLFO.amplitude)
     out.append(instrument.octave)
     return out
 
 
 def encodeMelodicTrack(track: Track) -> bytes:
     encodedInstrument = encodeInstrument(track.instrument)
-    encodedNotes = map(
-        lambda n: encodeNoteEvent(n, track.instrument.octave, False),
-        track.notes
-    )
-    noteLength = reduce(lambda d, c: len(c) + d, encodedNotes)
+    encodedNotes = [
+        encodeNoteEvent(n, track.instrument.octave, False) for n in track.notes
+    ]
+    noteLength = sum([len(e) for e in encodedNotes])
 
     out = bytearray()
     out.append(track.id)

@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser
-from mido import MidiFile
-from arcade_music import encodeSong, getEmptySong
+# from mido import MidiFile
+from arcade_music import encodeSong, getEmptySong, \
+    NoteEvent, Note, EnharmonicSpelling
 from utils.logger import create_logger
 import logging
 
@@ -25,11 +26,25 @@ logger.debug(f"Input path is {input_path}")
 # midi = MidiFile(input_path)
 
 song = getEmptySong(2)
+
+song.tracks[0].notes.append(
+    NoteEvent(
+        notes=[
+            Note(
+                note=49,  # Lowest C in octave
+                enharmonicSpelling=EnharmonicSpelling.NORMAL
+            )
+        ],
+        startTick=0,
+        endTick=8
+    )
+)
+
 bin_result = encodeSong(song)
 
 logger.debug(f"Generated {len(bin_result)} bytes, converting to text")
 
-hex_result = map(lambda v: format(v, "02X"), bin_result)
+hex_result = map(lambda v: format(v, "02x"), bin_result)
 result = "hex`"
 for hex_num in hex_result:
     result += hex_num
