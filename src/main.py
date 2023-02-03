@@ -26,11 +26,9 @@ logger.debug(f"Input path is {input_path}")
 midi = MidiFile(input_path)
 
 song = getEmptySong(2)
-# Using these settings lets us say 1 tick is 1 ms
-# Each measure will last 1 sec
 song.ticksPerBeat = 100
 song.beatsPerMeasure = 10
-song.beatsPerMinute = 600
+song.beatsPerMinute = 120
 
 
 def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
@@ -56,10 +54,8 @@ for i, msg in enumerate(msgs):
     note_time = round(find_note_time(i, msg.note, msgs) * 1000)
     note_value = msg.note - 11
     enharmonic = EnharmonicSpelling.NORMAL
-    # I have no clue why we are dividing by 5
-    # Otherwise, the music plays 5 times slower
-    start_tick = round((time - round(msg.time * 1000)) / 5)
-    end_tick = round((time - round(msg.time * 1000) + note_time) / 5)
+    start_tick = round((time - round(msg.time * 1000)) / 10)
+    end_tick = round((time - round(msg.time * 1000) + note_time) / 10)
     logger.debug(f"Note {note_value} with enharmonic {enharmonic} starts on "
                  f"tick {start_tick} and ends on tick {end_tick} for "
                  f"{end_tick - start_tick} ticks")
