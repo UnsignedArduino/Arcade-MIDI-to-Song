@@ -53,18 +53,16 @@ for i, msg in enumerate(msgs):
         continue
     note_time = round(find_note_time(i, msg.note, msgs) * 1000)
     note_value = msg.note - 11
-    enharmonic = EnharmonicSpelling.NORMAL
     start_tick = round((time - round(msg.time * 1000)) / 10)
     end_tick = round((time - round(msg.time * 1000) + note_time) / 10)
-    logger.debug(f"Note {note_value} with enharmonic {enharmonic} starts on "
-                 f"tick {start_tick} and ends on tick {end_tick} for "
-                 f"{end_tick - start_tick} ticks")
+    logger.debug(f"Note {note_value} starts on tick {start_tick} and ends on "
+                 f"tick {end_tick} for {end_tick - start_tick} ticks")
     song.tracks[0].notes.append(
         NoteEvent(
             notes=[
                 Note(
                     note=note_value,
-                    enharmonicSpelling=enharmonic
+                    enharmonicSpelling=EnharmonicSpelling.NORMAL
                 )
             ],
             startTick=start_tick,
