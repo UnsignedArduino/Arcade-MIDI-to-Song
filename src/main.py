@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser
-# from mido import MidiFile
+from mido import MidiFile, Message
 from arcade_music import encodeSong, getEmptySong, \
     NoteEvent, Note, EnharmonicSpelling
 from utils.logger import create_logger
@@ -23,22 +23,58 @@ logger.debug(f"Received arguments: {args}")
 input_path = Path(args.input)
 logger.debug(f"Input path is {input_path}")
 
-# midi = MidiFile(input_path)
+midi = MidiFile(input_path)
 
 song = getEmptySong(2)
+# Using these settings lets us say 1 tick is 1 ms
+# Each measure will last 1 sec
+song.ticksPerBeat = 100
+song.beatsPerMeasure = 10
+song.beatsPerMinute = 600
 
-song.tracks[0].notes.append(
-    NoteEvent(
-        notes=[
-            Note(
-                note=49,  # Lowest C in octave
-                enharmonicSpelling=EnharmonicSpelling.NORMAL
-            )
-        ],
-        startTick=0,
-        endTick=8
+
+def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
+    time = 0
+    for i in range(start_index, len(msgs)):
+        msg = msgs[i]
+        if msg.type not in ("note_on", "note_off"):
+            continue
+        time += msg.time
+        if ((msg.type == "note_on" and msg.velocity == 0) or
+            msg.type == "note_off") and msg.note == note:
+            break
+    return time
+
+
+msgs = list(midi)
+
+time = 0
+for i, msg in enumerate(msgs):
+    time += round(msg.time * 1000)
+    if msg.type != "note_on" or msg.velocity == 0:
+        continue
+    note_time = round(find_note_time(i, msg.note, msgs) * 1000)
+    note_value = msg.note - 11
+    enharmonic = EnharmonicSpelling.NORMAL
+    # I have no clue why we are dividing by 5
+    # Otherwise, the music plays 5 times slower
+    start_tick = round((time - round(msg.time * 1000)) / 5)
+    end_tick = round((time - round(msg.time * 1000) + note_time) / 5)
+    logger.debug(f"Note {note_value} with enharmonic {enharmonic} starts on "
+                 f"tick {start_tick} and ends on tick {end_tick} for "
+                 f"{end_tick - start_tick} ticks")
+    song.tracks[0].notes.append(
+        NoteEvent(
+            notes=[
+                Note(
+                    note=note_value,
+                    enharmonicSpelling=enharmonic
+                )
+            ],
+            startTick=start_tick,
+            endTick=end_tick
+        )
     )
-)
 
 bin_result = encodeSong(song)
 
