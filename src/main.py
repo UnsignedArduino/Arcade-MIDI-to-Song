@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser
 from mido import MidiFile, Message
+from collections import namedtuple
 from arcade_music import encodeSong, getEmptySong, \
     NoteEvent, Note, EnharmonicSpelling
 from utils.logger import create_logger
@@ -44,31 +45,62 @@ def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
     return time
 
 
+NoteInfo = namedtuple("NoteInfo", "note_value note_time start_tick end_tick")
+
+
+def gather_note_info(index: int, msgs: list[Message],
+                     current_time: int) -> NoteInfo:
+    msg = msgs[index]
+    if msg.type != "note_on":
+        return NoteInfo(
+            note_value=-1,
+            note_time=-1,
+            start_tick=-1,
+            end_tick=-1
+        )
+    note_value = msg.note - 11
+    note_time = round(find_note_time(i, msg.note, msgs) * 1000)
+    start_tick = round((current_time - round(msg.time * 1000)) / 10)
+    end_tick = round((current_time - round(msg.time * 1000) + note_time) / 10)
+    return NoteInfo(
+        note_value=note_value,
+        note_time=note_time,
+        start_tick=start_tick,
+        end_tick=end_tick
+    )
+
+
 msgs = list(midi)
 
 time = 0
-for i, msg in enumerate(msgs):
+i = 0
+while i < len(msgs):
+    msg = msgs[i]
     time += round(msg.time * 1000)
     if msg.type != "note_on" or msg.velocity == 0:
+        i += 1
         continue
-    note_time = round(find_note_time(i, msg.note, msgs) * 1000)
-    note_value = msg.note - 11
-    start_tick = round((time - round(msg.time * 1000)) / 10)
-    end_tick = round((time - round(msg.time * 1000) + note_time) / 10)
-    logger.debug(f"Note {note_value} starts on tick {start_tick} and ends on "
-                 f"tick {end_tick} for {end_tick - start_tick} ticks")
+    chord = [gather_note_info(i, msgs, time)]
+    while (gather_note_info(i, msgs, time).start_tick ==
+           gather_note_info(i + 1, msgs, time).start_tick):
+        i += 1
+        chord.append(gather_note_info(i, msgs, time))
+    logger.debug(f"Chord {[c.note_value for c in chord]} starts on tick "
+                 f"{chord[0].start_tick} and ends on tick {chord[0].end_tick} "
+                 f"for {chord[0].end_tick - chord[0].start_tick} ticks")
     song.tracks[0].notes.append(
         NoteEvent(
             notes=[
                 Note(
-                    note=note_value,
+                    note=n.note_value,
                     enharmonicSpelling=EnharmonicSpelling.NORMAL
-                )
+                ) for n in chord
             ],
-            startTick=start_tick,
-            endTick=end_tick
+            startTick=chord[0].start_tick,
+            endTick=chord[0].end_tick
         )
     )
+    i += 1
 
 bin_result = encodeSong(song)
 
