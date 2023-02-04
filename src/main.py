@@ -30,6 +30,7 @@ song = getEmptySong(2)
 song.ticksPerBeat = 100
 song.beatsPerMeasure = 10
 song.beatsPerMinute = 120
+song.tracks[0].instrument.octave = 2
 
 
 def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
@@ -58,7 +59,7 @@ def gather_note_info(index: int, msgs: list[Message],
             start_tick=-1,
             end_tick=-1
         )
-    note_value = msg.note - 11
+    note_value = msg.note
     note_time = round(find_note_time(i, msg.note, msgs) * 1000)
     start_tick = round((current_time - round(msg.time * 1000)) / 10)
     end_tick = round((current_time - round(msg.time * 1000) + note_time) / 10)
