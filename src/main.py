@@ -27,7 +27,8 @@ logger.debug(f"Input path is {input_path}")
 
 midi = MidiFile(input_path)
 
-logger.debug(f"MIDI is {midi.length}s long, using {ceil(midi.length)} measures")
+logger.debug(f"MIDI is {midi.length}s long, "
+             f"using {ceil(midi.length)} measures")
 
 
 def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
@@ -43,7 +44,8 @@ def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
     return time
 
 
-NoteInfo = namedtuple("NoteInfo", "note_value note_time start_tick end_tick")
+NoteInfo = namedtuple("NoteInfo",
+                      "note_value note_time start_tick end_tick")
 
 
 def gather_note_info(index: int, msgs: list[Message],
@@ -68,44 +70,68 @@ def gather_note_info(index: int, msgs: list[Message],
     )
 
 
+NoteSimpleEvent = namedtuple("NoteSimpleEvent",
+                             "note start_tick end_tick")
+ChordSimpleEvent = namedtuple("ChordSimpleEvent",
+                              "notes start_tick end_tick")
+
+msgs = list(midi)
+simple_notes = []
+
+curr_time = 0
+for i, msg in enumerate(msgs):
+    curr_time += round(msg.time * 1000)
+    if msg.type not in ("note_on", "note_off"):
+        continue
+    note_info = gather_note_info(i, msgs, curr_time)
+    if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
+        pass
+    else:
+        note_simple_event = NoteSimpleEvent(note_info.note_value,
+                                            note_info.start_tick,
+                                            note_info.end_tick)
+        # logger.debug(note_simple_event)
+        simple_notes.append(note_simple_event)
+
+
+def find_chord_with_start_tick(chords: list[ChordSimpleEvent],
+                               start_tick: int) -> int:
+    for i, chord in enumerate(chords):
+        if chord.start_tick == start_tick:
+            return i
+    return -1
+
+
+simple_chords = []
+for note in simple_notes:
+    chord_index = find_chord_with_start_tick(simple_chords, note.start_tick)
+    if chord_index == -1:
+        simple_chords.append(
+            ChordSimpleEvent([note.note], note.start_tick, note.end_tick)
+        )
+    else:
+        simple_chords[chord_index].notes.append(note.note)
+
 song = getEmptySong(ceil(midi.length))
 song.ticksPerBeat = 100
 song.beatsPerMeasure = 10
 song.beatsPerMinute = 60
 song.tracks[0].instrument.octave = 2
 
-
-msgs = list(midi)
-
-time = 0
-i = 0
-while i < len(msgs):
-    msg = msgs[i]
-    time += round(msg.time * 1000)
-    if msg.type != "note_on" or msg.velocity == 0:
-        i += 1
-        continue
-    chord = [gather_note_info(i, msgs, time)]
-    while (gather_note_info(i, msgs, time).start_tick ==
-           gather_note_info(i + 1, msgs, time).start_tick):
-        i += 1
-        chord.append(gather_note_info(i, msgs, time))
-    logger.debug(f"Chord {[c.note_value for c in chord]} starts on tick "
-                 f"{chord[0].start_tick} and ends on tick {chord[0].end_tick} "
-                 f"for {chord[0].end_tick - chord[0].start_tick} ticks")
+for i, chord in enumerate(simple_chords):
+    logger.debug(f"Chord {i}: {chord}")
     song.tracks[0].notes.append(
         NoteEvent(
             notes=[
                 Note(
-                    note=n.note_value,
+                    note=n,
                     enharmonicSpelling=EnharmonicSpelling.NORMAL
-                ) for n in chord
+                ) for n in chord.notes
             ],
-            startTick=chord[0].start_tick,
-            endTick=chord[0].end_tick
+            startTick=chord.start_tick,
+            endTick=chord.end_tick
         )
     )
-    i += 1
 
 bin_result = encodeSong(song)
 
