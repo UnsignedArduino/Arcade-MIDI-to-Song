@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 from argparse import ArgumentParser
 from mido import MidiFile, Message
+from math import ceil
 from collections import namedtuple
 from arcade_music import encodeSong, getEmptySong, \
     NoteEvent, Note, EnharmonicSpelling
@@ -26,7 +27,9 @@ logger.debug(f"Input path is {input_path}")
 
 midi = MidiFile(input_path)
 
-song = getEmptySong(100)
+logger.debug(f"MIDI is {midi.length}s long, using {ceil(midi.length)} measures")
+
+song = getEmptySong(ceil(midi.length))
 song.ticksPerBeat = 100
 song.beatsPerMeasure = 10
 song.beatsPerMinute = 60
