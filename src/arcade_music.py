@@ -108,10 +108,10 @@ def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
 
     try:
         return bytes(
-            [(note.note - (instrumentOctave - 2) * 12) | (flags << 6)])
+            [(note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (flags << 6)])
     except ValueError:
         raise ValueError(f"{note.note} generates invalid byte "
-                         f"{(note.note - (instrumentOctave - 2) * 12) | (flags << 6)}")
+                         f"{(note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (flags << 6)}")
 
 
 def encodeNoteEvent(event: NoteEvent, instrumentOctave: int,

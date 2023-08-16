@@ -26,10 +26,10 @@ logger.debug(f"Input path is {input_path}")
 
 midi = MidiFile(input_path)
 
-song = getEmptySong(2)
+song = getEmptySong(100)
 song.ticksPerBeat = 100
 song.beatsPerMeasure = 10
-song.beatsPerMinute = 120
+song.beatsPerMinute = 60
 song.tracks[0].instrument.octave = 2
 
 
@@ -122,4 +122,3 @@ if output_path is None:
 else:
     logger.debug(f"Writing to {output_path}")
     Path(output_path).write_text(result)
-
