@@ -29,12 +29,6 @@ midi = MidiFile(input_path)
 
 logger.debug(f"MIDI is {midi.length}s long, using {ceil(midi.length)} measures")
 
-song = getEmptySong(ceil(midi.length))
-song.ticksPerBeat = 100
-song.beatsPerMeasure = 10
-song.beatsPerMinute = 60
-song.tracks[0].instrument.octave = 2
-
 
 def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
     time = 0
@@ -63,7 +57,7 @@ def gather_note_info(index: int, msgs: list[Message],
             end_tick=-1
         )
     note_value = msg.note
-    note_time = round(find_note_time(i, msg.note, msgs) * 1000)
+    note_time = round(find_note_time(index, msg.note, msgs) * 1000)
     start_tick = round((current_time - round(msg.time * 1000)) / 10)
     end_tick = round((current_time - round(msg.time * 1000) + note_time) / 10)
     return NoteInfo(
@@ -72,6 +66,13 @@ def gather_note_info(index: int, msgs: list[Message],
         start_tick=start_tick,
         end_tick=end_tick
     )
+
+
+song = getEmptySong(ceil(midi.length))
+song.ticksPerBeat = 100
+song.beatsPerMeasure = 10
+song.beatsPerMinute = 60
+song.tracks[0].instrument.octave = 2
 
 
 msgs = list(midi)
