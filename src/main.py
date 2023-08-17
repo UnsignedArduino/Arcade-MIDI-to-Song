@@ -59,7 +59,7 @@ def gather_note_info(index: int, msgs: list[Message],
             end_tick=-1
         )
     note_value = msg.note
-    note_time = round(find_note_time(index, msg.note, msgs) * 1000)
+    note_time = round(find_note_time(index + 1, msg.note, msgs) * 1000)
     start_tick = round((current_time - round(msg.time * 1000)) / 10)
     end_tick = round((current_time - round(msg.time * 1000) + note_time) / 10)
     return NoteInfo(
@@ -84,13 +84,15 @@ for i, msg in enumerate(msgs):
     if msg.type not in ("note_on", "note_off"):
         continue
     note_info = gather_note_info(i, msgs, curr_time)
+    # logger.debug(f"{i}: {msg}")
     if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
         pass
     else:
         note_simple_event = NoteSimpleEvent(note_info.note_value,
                                             note_info.start_tick,
                                             note_info.end_tick)
-        # logger.debug(note_simple_event)
+        # logger.debug(f"{i}: * {note_simple_event} "
+        #              f"({note_simple_event.end_tick - note_simple_event.start_tick})")
         simple_notes.append(note_simple_event)
 
 
