@@ -1,13 +1,15 @@
+import logging
+from argparse import ArgumentParser
+from collections import namedtuple
+from math import ceil
 from pathlib import Path
 from typing import Optional
-from argparse import ArgumentParser
-from mido import MidiFile, Message
-from math import ceil
-from collections import namedtuple
-from arcade_music import encodeSong, getEmptySong, \
-    NoteEvent, Note, EnharmonicSpelling
+
+from mido import Message, MidiFile
+
+from arcade_music import EnharmonicSpelling, Note, NoteEvent, encodeSong, \
+    getEmptySong
 from utils.logger import create_logger
-import logging
 
 logger = create_logger(name=__name__, level=logging.INFO)
 
@@ -108,7 +110,6 @@ for i, msg in enumerate(msgs):
         # logger.debug(f"{i}: * {note_simple_event} ({duration})")
         simple_notes.append(note_simple_event)
 
-
 logger.info(f"Last tick is {ending_tick}")
 
 
@@ -139,24 +140,21 @@ logger.info(f"measure_count = {measure_count}")
 logger.info(f"ticksPerBeat = {ticks_per_beat}")
 logger.info(f"beatsPerMeasure = {beats_per_measure}")
 logger.info(f"beatsPerMinute = {beats_per_minute}")
-logger.info(f"Maximum number of ticks is {measure_count * ticks_per_beat * beats_per_measure} ticks")
+logger.info(
+    f"Maximum number of ticks is {measure_count * ticks_per_beat * beats_per_measure} ticks")
 
 song = getEmptySong(ceil(midi.length / divisor))
 song.ticksPerBeat = ticks_per_beat
 song.beatsPerMeasure = beats_per_measure
 song.beatsPerMinute = beats_per_minute
-song.tracks[0].instrument.octave = 2
+song.tracks[0].instrument.octave = 3
 
 for i, chord in enumerate(simple_chords):
     logger.debug(f"Chord {i}: {chord}")
     song.tracks[0].notes.append(
         NoteEvent(
-            notes=[
-                Note(
-                    note=n,
-                    enharmonicSpelling=EnharmonicSpelling.NORMAL
-                ) for n in chord.notes
-            ],
+            notes=[Note(note=n, enharmonicSpelling=EnharmonicSpelling.NORMAL)
+                   for n in chord.notes],
             startTick=round(chord.start_tick / divisor),
             endTick=round(chord.end_tick / divisor)
         )

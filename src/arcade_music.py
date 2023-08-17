@@ -1,9 +1,14 @@
 # https://github.com/microsoft/pxt/blob/master/pxtlib/music.ts
 
-from typing import Optional, List
-from struct import pack
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from struct import pack
+from typing import List, Optional
+
+from utils.logger import create_logger
+
+logger = create_logger(name=__name__, level=logging.INFO)
 
 
 @dataclass
@@ -106,12 +111,20 @@ def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
     elif note.enharmonicSpelling == EnharmonicSpelling.SHARP:
         flags = 2
 
+    byte_val = (note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (
+            flags << 6)
+
     try:
         return bytes(
-            [(note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (flags << 6)])
+            [byte_val])
     except ValueError:
-        raise ValueError(f"{note.note} generates invalid byte "
-                         f"{(note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (flags << 6)}")
+        # while byte_val < 0:
+        #     byte_val += 12
+        # while byte_val > 255:
+        #     byte_val -= 12
+        logger.warning(f"Note {note.note} generates invalid byte value "
+                       f"{byte_val}, skipping range!")
+        return bytes([])
 
 
 def encodeNoteEvent(event: NoteEvent, instrumentOctave: int,
@@ -143,9 +156,12 @@ def encodeInstrument(instrument: Instrument) -> bytes:
         out += get16BitNumber(instrument.pitchEnvelope.release)
         out += get16BitNumber(instrument.pitchEnvelope.amplitude)
     out.append(0 if instrument.ampLFO is None else instrument.ampLFO.frequency)
-    out += get16BitNumber(0 if instrument.ampLFO is None else instrument.ampLFO.amplitude)
-    out.append(0 if instrument.pitchLFO is None else instrument.pitchLFO.frequency)
-    out += get16BitNumber(0 if instrument.pitchLFO is None else instrument.pitchLFO.amplitude)
+    out += get16BitNumber(
+        0 if instrument.ampLFO is None else instrument.ampLFO.amplitude)
+    out.append(
+        0 if instrument.pitchLFO is None else instrument.pitchLFO.frequency)
+    out += get16BitNumber(
+        0 if instrument.pitchLFO is None else instrument.pitchLFO.amplitude)
     out.append(instrument.octave)
     return out
 
