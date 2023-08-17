@@ -9,7 +9,7 @@ from arcade_music import encodeSong, getEmptySong, \
 from utils.logger import create_logger
 import logging
 
-logger = create_logger(name=__name__, level=logging.DEBUG)
+logger = create_logger(name=__name__, level=logging.INFO)
 
 parser = ArgumentParser(prog="ArcadeMIDItoSong",
                         description="A program to convert MIDI files to the "
@@ -19,16 +19,27 @@ parser.add_argument("--input", "-i", required=True, type=Path,
 parser.add_argument("--output", "-o", type=Optional[Path],
                     help="Output text file path, otherwise we will output to "
                          "standard output.")
+parser.add_argument("--divisor", "-d", type=int,
+                    default=1,
+                    help="A divisor to reduce the number of measures used. "
+                         "A higher integer means a longer song can fit in the "
+                         "maximum of 255 measures of a song, but with less "
+                         "precision. Must be greater than or equal to 1, and "
+                         "defaults to 1 for no division.")
 args = parser.parse_args()
 logger.debug(f"Received arguments: {args}")
 
 input_path = Path(args.input)
-logger.debug(f"Input path is {input_path}")
+logger.info(f"Input path is {input_path}")
 
 midi = MidiFile(input_path)
+logger.info(f"MIDI is {midi.length}s long")
 
-logger.debug(f"MIDI is {midi.length}s long, "
-             f"using {ceil(midi.length)} measures")
+divisor = int(args.divisor)
+if divisor < 1:
+    raise ValueError(f"divisor must be an integer greater than or equal to 1, "
+                     f"not {divisor}!")
+logger.info(f"Using divisor of {divisor}")
 
 
 def find_note_time(start_index: int, note: int, msgs: list[Message]) -> float:
@@ -79,6 +90,7 @@ msgs = list(midi)
 simple_notes = []
 
 curr_time = 0
+ending_tick = 0
 for i, msg in enumerate(msgs):
     curr_time += round(msg.time * 1000)
     if msg.type not in ("note_on", "note_off"):
@@ -91,9 +103,13 @@ for i, msg in enumerate(msgs):
         note_simple_event = NoteSimpleEvent(note_info.note_value,
                                             note_info.start_tick,
                                             note_info.end_tick)
-        # logger.debug(f"{i}: * {note_simple_event} "
-        #              f"({note_simple_event.end_tick - note_simple_event.start_tick})")
+        ending_tick = max(ending_tick, note_info.end_tick)
+        # duration = note_simple_event.end_tick - note_simple_event.start_tick
+        # logger.debug(f"{i}: * {note_simple_event} ({duration})")
         simple_notes.append(note_simple_event)
+
+
+logger.info(f"Last tick is {ending_tick}")
 
 
 def find_chord_with_start_tick(chords: list[ChordSimpleEvent],
@@ -114,10 +130,21 @@ for note in simple_notes:
     else:
         simple_chords[chord_index].notes.append(note.note)
 
-song = getEmptySong(ceil(midi.length))
-song.ticksPerBeat = 100
-song.beatsPerMeasure = 10
-song.beatsPerMinute = 60
+ticks_per_beat = 100
+beats_per_measure = 10
+beats_per_minute = round(60 / divisor)
+measure_count = ceil(ending_tick / ticks_per_beat / beats_per_measure)
+
+logger.info(f"measure_count = {measure_count}")
+logger.info(f"ticksPerBeat = {ticks_per_beat}")
+logger.info(f"beatsPerMeasure = {beats_per_measure}")
+logger.info(f"beatsPerMinute = {beats_per_minute}")
+logger.info(f"Maximum number of ticks is {measure_count * ticks_per_beat * beats_per_measure} ticks")
+
+song = getEmptySong(ceil(midi.length / divisor))
+song.ticksPerBeat = ticks_per_beat
+song.beatsPerMeasure = beats_per_measure
+song.beatsPerMinute = beats_per_minute
 song.tracks[0].instrument.octave = 2
 
 for i, chord in enumerate(simple_chords):
@@ -130,14 +157,15 @@ for i, chord in enumerate(simple_chords):
                     enharmonicSpelling=EnharmonicSpelling.NORMAL
                 ) for n in chord.notes
             ],
-            startTick=chord.start_tick,
-            endTick=chord.end_tick
+            startTick=round(chord.start_tick / divisor),
+            endTick=round(chord.end_tick / divisor)
         )
     )
+    ending_tick = chord.end_tick
 
 bin_result = encodeSong(song)
 
-logger.debug(f"Generated {len(bin_result)} bytes, converting to text")
+logger.info(f"Generated {len(bin_result)} bytes, converting to text")
 
 hex_result = map(lambda v: format(v, "02x"), bin_result)
 result = "hex`"
@@ -145,12 +173,12 @@ for hex_num in hex_result:
     result += hex_num
 result += "`"
 
-logger.debug(f"Hex string result is {len(result)} characters long")
+logger.info(f"Hex string result is {len(result)} characters long")
 
 output_path = args.output
 if output_path is None:
-    logger.debug("No output path provided, printing to standard output")
+    logger.info("No output path provided, printing to standard output")
     print(result)
 else:
-    logger.debug(f"Writing to {output_path}")
+    logger.info(f"Writing to {output_path}")
     Path(output_path).write_text(result)
