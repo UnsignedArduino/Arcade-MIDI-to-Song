@@ -107,31 +107,6 @@ def get_available_tracks() -> list[Track]:
             )
         ),
         Track(
-            id=3,
-            name="Fish",
-            notes=[],
-            iconURI="music-editor/fish.png",
-            instrument=Instrument(
-                waveform=1,
-                octave=3,
-                ampEnvelope=Envelope(
-                    attack=220,
-                    decay=105,
-                    sustain=1024,
-                    release=350,
-                    amplitude=1024
-                ),
-                ampLFO=LFO(
-                    frequency=5,
-                    amplitude=100
-                ),
-                pitchLFO=LFO(
-                    frequency=1,
-                    amplitude=4
-                )
-            )
-        ),
-        Track(
             id=4,
             name="Car",
             notes=[],
