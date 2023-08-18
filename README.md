@@ -10,10 +10,14 @@ progress)
 3. Install all the requirements in [`requirements.txt`](requirements.txt)
 
 ## Usage
-
-Run [`src/main.py`](src/main.py) at the root of the repository.
+ 
+Run [`src/main.py`](src/main.py) at the root of the repository in the terminal.
+(It is a CLI app)
 
 ### Example commands
+
+You may need to edit the following commands to use `py` or `python3` if
+`python` doesn't work.
 
 To convert the MIDI file `Never_Gonna_Give_You_Up.mid` and print the Arcade
 song to standard output with the default track "dog" and no divisor.
