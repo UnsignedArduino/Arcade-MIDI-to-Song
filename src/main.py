@@ -11,8 +11,6 @@ from arcade_music import EnharmonicSpelling, Note, NoteEvent, encodeSong, \
     getEmptySong
 from utils.logger import create_logger
 
-logger = create_logger(name=__name__, level=logging.INFO)
-
 parser = ArgumentParser(prog="ArcadeMIDItoSong",
                         description="A program to convert MIDI files to the "
                                     "Arcade song format. ")
@@ -28,7 +26,12 @@ parser.add_argument("--divisor", "-d", type=int,
                          "maximum of 255 measures of a song, but with less "
                          "precision. Must be greater than or equal to 1, and "
                          "defaults to 1 for no division.")
+parser.add_argument("--debug", action="store_const",
+                    const=logging.DEBUG, default=logging.INFO,
+                    help="Include debug messages. Defaults to info and "
+                         "greater severity messages only.")
 args = parser.parse_args()
+logger = create_logger(name=__name__, level=args.debug)
 logger.debug(f"Received arguments: {args}")
 
 input_path = Path(args.input)
@@ -71,12 +74,11 @@ def gather_note_info(index: int, msgs: list[Message],
             start_tick=-1,
             end_tick=-1
         )
-    note_value = msg.note
     note_time = round(find_note_time(index + 1, msg.note, msgs) * 1000)
-    start_tick = round((current_time - round(msg.time * 1000)) / 10)
-    end_tick = round((current_time - round(msg.time * 1000) + note_time) / 10)
+    start_tick = round(current_time / 10)
+    end_tick = start_tick + round(note_time / 10)
     return NoteInfo(
-        note_value=note_value,
+        note_value=msg.note,
         note_time=note_time,
         start_tick=start_tick,
         end_tick=end_tick
@@ -97,17 +99,17 @@ for i, msg in enumerate(msgs):
     curr_time += round(msg.time * 1000)
     if msg.type not in ("note_on", "note_off"):
         continue
-    note_info = gather_note_info(i, msgs, curr_time)
-    # logger.debug(f"{i}: {msg}")
+    logger.debug(f"{i}: {msg} (current time: {curr_time})")
     if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
         pass
     else:
+        note_info = gather_note_info(i, msgs, curr_time)
         note_simple_event = NoteSimpleEvent(note_info.note_value,
                                             note_info.start_tick,
                                             note_info.end_tick)
         ending_tick = max(ending_tick, note_info.end_tick)
-        # duration = note_simple_event.end_tick - note_simple_event.start_tick
-        # logger.debug(f"{i}: * {note_simple_event} ({duration})")
+        duration = note_simple_event.end_tick - note_simple_event.start_tick
+        logger.debug(f"{i}: * {note_simple_event} (duration: {duration})")
         simple_notes.append(note_simple_event)
 
 logger.info(f"Last tick is {ending_tick}")
@@ -150,7 +152,7 @@ song.beatsPerMinute = beats_per_minute
 song.tracks[0].instrument.octave = 3
 
 for i, chord in enumerate(simple_chords):
-    logger.debug(f"Chord {i}: {chord}")
+    # logger.debug(f"Chord {i}: {chord}")
     song.tracks[0].notes.append(
         NoteEvent(
             notes=[Note(note=n, enharmonicSpelling=EnharmonicSpelling.NORMAL)
