@@ -3,22 +3,33 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from math import ceil
 from pathlib import Path
-from typing import Optional
 
 from mido import Message, MidiFile
 
-from arcade_music import EnharmonicSpelling, Note, NoteEvent, encodeSong, \
+from arcade.music import EnharmonicSpelling, Note, NoteEvent, encodeSong, \
     getEmptySong
+from arcade.tracks import get_available_tracks
 from utils.logger import create_logger
+
+tracks = get_available_tracks()
+track_names = [t.name.lower() for t in tracks]
+track_ids = [t.id for t in tracks]
 
 parser = ArgumentParser(prog="ArcadeMIDItoSong",
                         description="A program to convert MIDI files to the "
                                     "Arcade song format. ")
 parser.add_argument("--input", "-i", required=True, type=Path,
                     help="Input MIDI file")
-parser.add_argument("--output", "-o", type=Optional[Path],
+parser.add_argument("--output", "-o", type=Path,
                     help="Output text file path, otherwise we will output to "
                          "standard output.")
+parser.add_argument("--track", "-t", metavar="TRACK",
+                    choices=track_ids + track_names,
+                    default=track_names[0],
+                    help=f"A track to use, which changes the instrument. "
+                         f"Available tracks include {track_names}. (You can "
+                         f"also use indices 0-{len(track_ids) - 1}) Defaults "
+                         f"to '{track_names[0]}'.")
 parser.add_argument("--divisor", "-d", type=int,
                     default=1,
                     help="A divisor to reduce the number of measures used. "
@@ -39,6 +50,16 @@ logger.info(f"Input path is {input_path}")
 
 midi = MidiFile(input_path)
 logger.info(f"MIDI is {midi.length}s long")
+
+selected_track = args.track
+logger.debug(f"Selected track {selected_track}")
+for track in tracks:
+    if selected_track == track.name.lower() or selected_track == track.id:
+        selected_track = track
+        break
+else:
+    raise ValueError(f"Unknown track ID or name {selected_track}!")
+logger.info(f"Using track '{selected_track.name}' ({selected_track})")
 
 divisor = int(args.divisor)
 if divisor < 1:
@@ -149,6 +170,7 @@ song = getEmptySong(ceil(midi.length / divisor))
 song.ticksPerBeat = ticks_per_beat
 song.beatsPerMeasure = beats_per_measure
 song.beatsPerMinute = beats_per_minute
+song.tracks[0] = selected_track
 song.tracks[0].instrument.octave = 3
 
 for i, chord in enumerate(simple_chords):

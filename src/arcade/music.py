@@ -123,7 +123,7 @@ def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
         # while byte_val > 255:
         #     byte_val -= 12
         logger.warning(f"Note {note.note} generates invalid byte value "
-                       f"{byte_val}, skipping range!")
+                       f"{byte_val}, skipping note!")
         return bytes([])
 
 
