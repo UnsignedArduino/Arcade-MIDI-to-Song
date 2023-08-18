@@ -3,6 +3,10 @@
 A Python tool to convert a MIDI file to a MakeCode Arcade song! (Work in
 progress)
 
+Some bug squashing may be needed but otherwise this tool is complete.
+
+Web version will be available soon in a different repo.
+
 ## Install
 
 1. Download and install Python.
@@ -10,7 +14,7 @@ progress)
 3. Install all the requirements in [`requirements.txt`](requirements.txt)
 
 ## Usage
- 
+
 Run [`src/main.py`](src/main.py) at the root of the repository in the terminal.
 (It is a CLI app)
 
