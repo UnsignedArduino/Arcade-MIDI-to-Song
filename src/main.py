@@ -133,7 +133,10 @@ for i, msg in enumerate(msgs):
         logger.debug(f"{i}: * {note_simple_event} (duration: {duration})")
         simple_notes.append(note_simple_event)
 
-logger.info(f"Last tick is {ending_tick}")
+logger.info(f"Last tick is {ending_tick} ({round(ending_tick / divisor)} "
+            f"after divisor)")
+
+ending_tick = round(ending_tick / divisor)
 
 
 def find_chord_with_start_tick(chords: list[ChordSimpleEvent],
@@ -166,7 +169,7 @@ logger.info(f"beatsPerMinute = {beats_per_minute}")
 logger.info(
     f"Maximum number of ticks is {measure_count * ticks_per_beat * beats_per_measure} ticks")
 
-song = getEmptySong(ceil(midi.length / divisor))
+song = getEmptySong(measure_count)
 song.ticksPerBeat = ticks_per_beat
 song.beatsPerMeasure = beats_per_measure
 song.beatsPerMinute = beats_per_minute
@@ -184,6 +187,8 @@ for i, chord in enumerate(simple_chords):
         )
     )
     ending_tick = chord.end_tick
+
+logger.info(f"Created {len(song.tracks[0].notes)} note events")
 
 bin_result = encodeSong(song)
 
