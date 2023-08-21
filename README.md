@@ -13,15 +13,15 @@ Web version will be available soon in a different repo.
 2. Clone this repo.
 3. Install all the requirements in [`requirements.txt`](requirements.txt)
 
+> You may need to edit commands listed in this repo to use `py` or `python3` if
+> `python` doesn't work.
+
 ## Usage
 
 Run [`src/main.py`](src/main.py) at the root of the repository in the terminal.
 (It is a CLI app)
 
 ### Example commands
-
-You may need to edit the following commands to use `py` or `python3` if
-`python` doesn't work.
 
 To convert the MIDI file `Never_Gonna_Give_You_Up.mid` and print the Arcade
 song to standard output with the default track "dog" and no divisor.
@@ -40,6 +40,23 @@ on.
 ```commandline
 python src/main.py -i "E:\Arcade MIDI to Song\testing\Friend_Like_Me_Disneys_Aladdin.mid" -o "Friend_Like_Me_Disneys_Aladdin song.ts" -d 2 -t computer --debug
 ```
+
+> #### What is this "divisor" thing?
+>
+> This CLI program provides a parameter called the "divisor", which can be
+> specified with `--divisor DIVISOR` or `-d DIVISOR`. (where `DIVISOR` is a
+> positive integer greater than 1) The divisor _divides_ the note tick ranges in
+> order to shorten the length of the song. For example, if a note spanned from
+> tick 2 to tick 8, but there was a divisor of 2, the note would actually end up
+> spanning from tick 1 (2 / 2 = 1) to tick 4. (8 / 2 = 4) To compensate for the
+> shorter duration, the BPM (beats per minute) is also lowered in order to slow
+> the song down. The act of slowing the song down while shortening the duration
+> of notes mostly cancels each other out.
+>
+> You may want to include (or even increase the value of) this parameter if
+> your
+> song cuts out in the middle of playing. (I haven't fully figured out why this
+> happens...)
 
 ### Help text
 
