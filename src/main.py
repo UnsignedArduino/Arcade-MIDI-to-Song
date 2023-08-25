@@ -3,11 +3,12 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from math import ceil
 from pathlib import Path
+from typing import Union
 
 from mido import Message, MidiFile
 
-from arcade.music import EnharmonicSpelling, Note, NoteEvent, encodeSong, \
-    getEmptySong
+from arcade.music import EnharmonicSpelling, Note, NoteEvent, Track, \
+    encodeSong, getEmptySong
 from arcade.tracks import get_available_tracks
 from utils.logger import create_logger
 
@@ -51,15 +52,18 @@ logger.info(f"Input path is {input_path}")
 midi = MidiFile(input_path)
 logger.info(f"MIDI is {midi.length}s long")
 
-selected_track = args.track
-logger.debug(f"Selected track {selected_track}")
-for track in tracks:
-    if selected_track == track.name.lower() or selected_track == track.id:
-        selected_track = track
-        break
-else:
-    raise ValueError(f"Unknown track ID or name {selected_track}!")
-logger.info(f"Using track '{selected_track.name}' ({selected_track})")
+
+def get_track_from_name_or_id(name_or_id: Union[int, str]) -> Track:
+    logger.debug(f"Finding track {name_or_id}")
+    for track in get_available_tracks():
+        if name_or_id == track.name.lower() or name_or_id == track.id:
+            selected_track = track
+            break
+    else:
+        raise ValueError(f"Unknown track ID or name {name_or_id}!")
+    logger.debug(f"Found track '{selected_track.name}' ({selected_track})")
+    return selected_track
+
 
 divisor = int(args.divisor)
 if divisor < 1:
@@ -169,26 +173,54 @@ logger.info(f"beatsPerMinute = {beats_per_minute}")
 logger.info(
     f"Maximum number of ticks is {measure_count * ticks_per_beat * beats_per_measure} ticks")
 
+selected_track = get_track_from_name_or_id(args.track)
+selected_higher_track = get_track_from_name_or_id(args.track)
+
 song = getEmptySong(measure_count)
 song.ticksPerBeat = ticks_per_beat
 song.beatsPerMeasure = beats_per_measure
 song.beatsPerMinute = beats_per_minute
-song.tracks[0] = selected_track
+song.tracks.clear()
+song.tracks.append(selected_track)
 song.tracks[0].instrument.octave = 3
+song.tracks.append(selected_higher_track)
+song.tracks[1].instrument.octave = 6
+
+logger.info(f"Using tracks '{selected_track.name}' ({selected_track}) and "
+            f"'{selected_higher_track.name}' ({selected_higher_track})")
 
 for i, chord in enumerate(simple_chords):
     # logger.debug(f"Chord {i}: {chord}")
-    song.tracks[0].notes.append(
-        NoteEvent(
-            notes=[Note(note=n, enharmonicSpelling=EnharmonicSpelling.NORMAL)
-                   for n in chord.notes],
-            startTick=round(chord.start_tick / divisor),
-            endTick=round(chord.end_tick / divisor)
-        )
+    notes = [Note(note=n, enharmonicSpelling=EnharmonicSpelling.NORMAL) for n
+             in chord.notes]
+    higher_notes = []
+    for n in notes:
+        note_val = ((n.note - (song.tracks[0].instrument.octave - 2) * 12) +
+                    1 - 12)
+        if note_val > 63:
+            higher_notes.append(n)
+            notes.remove(n)
+    event = NoteEvent(
+        notes=notes,
+        startTick=round(chord.start_tick / divisor),
+        endTick=round(chord.end_tick / divisor)
     )
+    higher_event = NoteEvent(
+        notes=higher_notes,
+        startTick=round(chord.start_tick / divisor),
+        endTick=round(chord.end_tick / divisor)
+    )
+    # logger.debug(f"Note event {i}: {event}")
+    if len(event.notes) > 0:
+        song.tracks[0].notes.append(event)
+    if len(higher_event.notes) > 0:
+        song.tracks[1].notes.append(higher_event)
     ending_tick = chord.end_tick
 
-logger.info(f"Created {len(song.tracks[0].notes)} note events")
+for i, track in enumerate(song.tracks):
+    logger.info(
+        f"Created {len(song.tracks[i].notes)} note events in track {i}")
+logger.info(f"Total of {sum([len(t.notes) for t in song.tracks])} note events")
 
 bin_result = encodeSong(song)
 

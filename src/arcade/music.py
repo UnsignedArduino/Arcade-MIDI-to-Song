@@ -111,20 +111,20 @@ def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:
     elif note.enharmonicSpelling == EnharmonicSpelling.SHARP:
         flags = 2
 
-    byte_val = (note.note - (instrumentOctave - 2) * 12) + 1 - 12 | (
-            flags << 6)
+    note_val = (note.note - (instrumentOctave - 2) * 12) + 1 - 12
+    byte_val = note_val | (flags << 6)
 
-    try:
-        return bytes(
-            [byte_val])
-    except ValueError:
-        # while byte_val < 0:
-        #     byte_val += 12
-        # while byte_val > 255:
-        #     byte_val -= 12
-        logger.warning(f"Note {note.note} generates invalid byte value "
-                       f"{byte_val}, skipping note!")
+    if note_val > 63:
+        logger.warning(f"Note {note.note} exceeds track range, skipping "
+                       f"note!")
         return bytes([])
+    else:
+        try:
+            return bytes([byte_val])
+        except ValueError:
+            logger.warning(f"Note {note.note} generates invalid byte value "
+                           f"{byte_val}, skipping note!")
+            return bytes([])
 
 
 def encodeNoteEvent(event: NoteEvent, instrumentOctave: int,
