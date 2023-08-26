@@ -28,12 +28,12 @@ parser.add_argument("--track", "-t", metavar="TRACK",
                          f"Available tracks include {track_names}. (You can "
                          f"also use indices 0-{len(track_ids) - 1}) Defaults "
                          f"to '{track_names[0]}'.")
-parser.add_argument("--divisor", "-d", type=int,
+parser.add_argument("--divisor", "-d", type=float,
                     default=1,
-                    help="A divisor to reduce the number of measures used. "
-                         "A higher integer means a longer song can fit in the "
-                         "maximum of 255 measures of a song, but with less "
-                         "precision. Must be greater than or equal to 1, and "
+                    help="A divisor to reduce (or increase!) the number of "
+                         "measures used. A higher float means a longer song "
+                         "can fit in the maximum of 255 measures of a song, "
+                         "but with less precision. Must be greater than 0, "
                          "defaults to 1 for no division.")
 parser.add_argument("--break", "-b", type=int, dest="char_break",
                     default=0,
@@ -54,9 +54,9 @@ logger.debug(f"Input path is {input_path}")
 midi = MidiFile(input_path)
 logger.debug(f"MIDI is {midi.length}s long")
 
-divisor = int(args.divisor)
-if divisor < 1:
-    raise ValueError(f"divisor must be an integer greater than or equal to 1, "
+divisor = float(args.divisor)
+if not divisor > 0:
+    raise ValueError(f"divisor must be a float greater than 0, "
                      f"not {divisor}!")
 logger.debug(f"Using divisor of {divisor}")
 

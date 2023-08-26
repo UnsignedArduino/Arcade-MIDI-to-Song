@@ -98,7 +98,7 @@ def get8BitNumber(num: Optional[int]) -> bytes:
 
 
 def get16BitNumber(num: Optional[int]) -> bytes:
-    return pack("<h", 0 if num is None else num)
+    return pack("<H", 0 if num is None else num)
 
 
 def encodeNote(note: Note, instrumentOctave: int, isDrumTrack: bool) -> bytes:

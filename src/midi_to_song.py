@@ -14,7 +14,7 @@ logger = create_logger(name=__name__, level=logging.INFO)
 
 
 def midi_to_song(midi: MidiFile, track_id: Union[str, int],
-                 divisor: int) -> Song:
+                 divisor: float) -> Song:
     def get_track_from_name_or_id(name_or_id: Union[int, str]) -> Track:
         logger.debug(f"Finding track {name_or_id}")
         for track in get_available_tracks():
