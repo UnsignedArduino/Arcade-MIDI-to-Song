@@ -45,9 +45,11 @@ python src/main.py -i "E:\Arcade MIDI to Song\testing\Friend_Like_Me_Disneys_Ala
 >
 > This CLI program provides a parameter called the "divisor", which can be
 > specified with `--divisor DIVISOR` or `-d DIVISOR`. (where `DIVISOR` is a
-> positive integer greater than 1) The divisor _divides_ the note tick ranges in
+> positive integer greater than 1) The divisor _divides_ the note tick ranges
+> in
 > order to shorten the length of the song. For example, if a note spanned from
-> tick 2 to tick 8, but there was a divisor of 2, the note would actually end up
+> tick 2 to tick 8, but there was a divisor of 2, the note would actually end
+> up
 > spanning from tick 1 (2 / 2 = 1) to tick 4. (8 / 2 = 4) To compensate for the
 > shorter duration, the BPM (beats per minute) is also lowered in order to slow
 > the song down. The act of slowing the song down while shortening the duration
@@ -62,7 +64,7 @@ python src/main.py -i "E:\Arcade MIDI to Song\testing\Friend_Like_Me_Disneys_Ala
 
 ```commandline
 usage: ArcadeMIDItoSong [-h] --input INPUT [--output OUTPUT] [--track TRACK]
-                        [--divisor DIVISOR] [--debug]
+                        [--divisor DIVISOR] [--break CHAR_BREAK] [--debug]
 
 A program to convert MIDI files to the Arcade song format.
 
@@ -76,8 +78,8 @@ options:
   --track TRACK, -t TRACK
                         A track to use, which changes the instrument.
                         Available tracks include ['dog', 'duck', 'cat',
-                        'fish', 'fish', 'car', 'computer', 'burger', 'cherry',
-                        'lemon']. (You can also use indices 0-9) Defaults to
+                        'fish', 'car', 'computer', 'burger', 'cherry',
+                        'lemon']. (You can also use indices 0-8) Defaults to
                         'dog'.
   --divisor DIVISOR, -d DIVISOR
                         A divisor to reduce the number of measures used. A
@@ -85,6 +87,9 @@ options:
                         maximum of 255 measures of a song, but with less
                         precision. Must be greater than or equal to 1, and
                         defaults to 1 for no division.
+  --break CHAR_BREAK, -b CHAR_BREAK
+                        Break the hex string after so many characters.
+                        Defaults to 0 for no breaking.
   --debug               Include debug messages. Defaults to info and greater
                         severity messages only.
 ```
