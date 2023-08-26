@@ -7,7 +7,7 @@ from mido import MidiFile
 from arcade.music import encodeSong
 from arcade.tracks import get_available_tracks
 from src.midi_to_song import midi_to_song
-from utils.logger import create_logger
+from utils.logger import create_logger, set_all_stdout_logger_levels
 
 tracks = get_available_tracks()
 track_names = [t.name.lower() for t in tracks]
@@ -44,7 +44,8 @@ parser.add_argument("--debug", action="store_const",
                     help="Include debug messages. Defaults to info and "
                          "greater severity messages only.")
 args = parser.parse_args()
-logger = create_logger(name=__name__, level=args.debug)
+logger = create_logger(name=__name__, level=logging.INFO)
+set_all_stdout_logger_levels(args.debug)
 logger.debug(f"Received arguments: {args}")
 
 input_path = Path(args.input)
