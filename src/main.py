@@ -6,12 +6,12 @@ from mido import MidiFile
 
 from arcade.music import encodeSong
 from arcade.tracks import get_available_tracks
-from src.midi_to_song import midi_to_song
+from midi_to_song import midi_to_song
 from utils.logger import create_logger, set_all_stdout_logger_levels
 
 tracks = get_available_tracks()
 track_names = [t.name.lower() for t in tracks]
-track_ids = [t.id for t in tracks]
+track_ids = [str(t.id) for t in tracks]
 
 parser = ArgumentParser(prog="ArcadeMIDItoSong",
                         description="A program to convert MIDI files to the "
@@ -65,7 +65,8 @@ if char_break < 0:
     raise ValueError(f"break must be an integer greater than or equal to 0, "
                      f"not {char_break}!")
 
-song = midi_to_song(midi, args.track, divisor)
+song = midi_to_song(midi, int(args.track) if args.track.isnumeric() else args.track,
+                    divisor)
 bin_result = encodeSong(song)
 
 logger.debug(f"Generated {len(bin_result)} bytes, converting to text")
